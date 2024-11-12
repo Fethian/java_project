@@ -1,0 +1,13 @@
+public class CeShi {
+    public static void main(String[] args) throws Exception 
+    {
+        IDao dao = new Dao();
+        String sql = " select * from table01 where id='01' ";
+        List<Map<String, Object>> list = dao.executeQueryForList(sql);
+        for (Map<String, Object> map : list) {
+            System.out.println(map);
+        }
+//        int count = dao.executeUpdate(sql);
+//        System.out.println(count!=0?"运行成功！":"运行失败!");
+    }
+}

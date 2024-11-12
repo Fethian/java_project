@@ -1,0 +1,183 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.sql.Types;
+
+public class Dao implements IDao{
+    public static String diverName="com.mysql.jdbc.Driver";
+    public static String url = "jdbc:mysql://localhost:3306/tab?useUnicode=true&characterEncoding=UTF-8";
+    public static String userName="root";
+    public static String password="root";
+    /**
+     * @return 1.获取连接
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     */
+    public static Connection getConnection() throws ClassNotFoundException,SQLException {
+        Class.forName(diverName);//加载
+        //指定用户名和密码
+        Connection conn = DriverManager.getConnection(url, userName,password);
+        return conn;
+    }
+    /**
+     * @deac 2.查询数据
+     * @param conn
+     * @param sql
+     * @throws SQLException
+     * @throws ClassNotFoundException 
+     */
+    public  List<Map<String, Object>> executeQueryForList(String sql) throws SQLException, ClassNotFoundException {
+        System.err.println(sql);
+        Connection conn = getConnection();
+        //创建Statement对象
+        Statement stmt = conn.createStatement();
+        //执行sql语句
+        ResultSet rs = stmt.executeQuery(sql);
+        List<Map<String, Object>> list = rsToList(rs);
+        closeConnection(conn, stmt, rs);//关闭
+        return list;
+    }
+    /**
+     * @desc 2 .将rs转换为List<map>
+     * @param rs
+     * @return
+     * @throws SQLException 
+     */
+    private  List<Map<String, Object>> rsToList(ResultSet rs) throws SQLException{
+        
+        //初始化list对象
+        List<Map<String, Object>> row=new ArrayList<Map<String,Object>>();
+        while (rs.next()) {//判断
+            //创建map容器
+            Map<String, Object> col =new HashMap<String, Object>();
+            for (int i = 1; i <=rs.getMetaData().getColumnCount(); i++) {
+                //判断数据类型  
+                switch (rs.getMetaData().getColumnType(i)) {
+                case Types.VARCHAR:
+                    col.put(rs.getMetaData().getColumnName(i), rs.getString(i));
+                    break;
+                case Types.INTEGER:
+                    col.put(rs.getMetaData().getColumnName(i), rs.getInt(i));
+                    break;
+                default:
+                    break;
+                }
+            }
+            //添加map数据
+            row.add(col);
+        }
+        return row;
+        
+    }
+    /**
+     * @desc  3.查询操作：获取一条数据
+     * @param sql
+     * @return
+     * @throws Exception
+     * @throws SQLException
+     */
+    public Map<String, Object> executeQueryForMap(String sql) throws Exception, SQLException
+    {
+       System.err.println(sql);
+       Connection conn = Dao.getConnection();
+       Statement stmt = conn.createStatement();
+       ResultSet rs = stmt.executeQuery(sql);
+       List<Map<String, Object>> list=this.rsToList(rs);
+       this.closeConnection(conn, stmt, rs);
+       if (!list.isEmpty()) 
+       {
+          return  list.get(0);
+       }
+       return null;
+    }
+    /**
+     * @desc 4.查询操作：获取总记录数
+     * @param sql
+     * @return
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     */
+    public int executeQueryForCount(String sql) throws ClassNotFoundException, SQLException{
+        System.err.println(sql);
+        //链接数据库
+        Connection conn = Dao.getConnection();
+        //创建Statement对象
+        Statement stmt = conn.createStatement();
+        //执行sql语句
+        ResultSet rs = stmt.executeQuery(sql);
+        int count = 0;
+        if (rs.next()) {
+            count = count+rs.getInt(1);
+        }
+        this.closeConnection(conn, stmt, rs);
+        return count;
+    }
+    /**
+     * @desc 5.执行添加，修改，删除操作
+     * @param sql
+     * @return
+     * @throws Exception
+     * @throws SQLException
+     */
+    public int executeUpdate(String sql) throws Exception, SQLException
+    {
+           System.err.println(sql);
+           Connection conn = Dao.getConnection();//连接
+           Statement stmt = conn.createStatement();//创建
+           int count = stmt.executeUpdate(sql);//执行
+           this.releaseConnection(conn, stmt);//关闭
+           return count;
+    }
+    /**
+     * @desc 6.关闭连接：关闭两个对象
+     * @param conn
+     * @param stmt
+     * @throws SQLException 
+     */
+    private void releaseConnection(Connection conn, Statement stmt) throws SQLException {
+        try {
+            //判断是否为空
+            if (stmt!=null) 
+            {
+                stmt.close();
+            }
+            if (conn!=null) 
+            {
+                conn.close();
+            }
+        } 
+        catch (SQLException e)
+        {
+            throw  new SQLException("数据库关闭异常");
+        }
+    }
+    /**
+     * @desc 7.关闭连接
+     * @param conn
+     * @param stmt
+     * @param rs
+     * @throws SQLException
+     */
+    public  void closeConnection(Connection conn, Statement stmt,
+            ResultSet rs) throws SQLException {
+        try {
+            if (rs!=null) {
+                rs.close();
+            }
+            if (stmt!=null) {
+                stmt.close();
+            }
+            if (conn!=null) {
+                conn.close();
+            }
+        } catch (SQLException e) {
+            throw new SQLException("数据关闭异常!");
+        }
+        
+    }
